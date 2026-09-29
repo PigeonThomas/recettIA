@@ -1,0 +1,99 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}recettIA – Trouvez une recette avec vos ingrédients{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-3">Quelles recettes puis-je faire ?</h1>
+            <p class="text-muted">
+                Indiquez les ingrédients dont vous disposez, séparés par des virgules,
+                et l'intelligence artificielle vous proposera 3 recettes adaptées.
+            </p>
+
+            {# Le formulaire envoie les ingrédients en POST vers cette même page
+               (route app_recipe_generate), qui déclenche l'appel à l'IA. #}
+            <form method="post" action="{{ path('app_recipe_generate') }}" class="mb-4">
+                <div class="input-group">
+                    <input
+                        type="text"
+                        name="ingredients"
+                        class="form-control"
+                        placeholder="Ex : tomates, oeufs, farine, fromage..."
+                        value="{{ ingredients }}"
+                        required
+                    >
+                    <button class="btn btn-primary" type="submit">Proposer des recettes</button>
+                </div>
+            </form>
+
+            {% if error %}
+                <div class="alert alert-danger" role="alert">{{ error }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if recipes|length > 0 %}
+        <div class="row">
+            {# Colonne de gauche : les 3 vignettes de recettes. #}
+            <div class="col-md-4 col-lg-3 mb-4">
+                <div class="list-group">
+                    {% for recipe in recipes %}
+                        {% set isActive = loop.index0 == selectedIndex %}
+                        <a
+                            href="{{ path('app_recipe_index', {recipe: loop.index0}) }}"
+                            class="list-group-item list-group-item-action {{ isActive ? 'disabled bg-secondary text-white' : '' }}"
+                            {# La vignette actuellement affichée est grisée et
+                               non cliquable : elle représente la page en cours. #}
+                            {% if isActive %}aria-current="true" aria-disabled="true" tabindex="-1"{% endif %}
+                        >
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>{{ recipe.title }}</strong>
+                                <span class="badge {{ isActive ? 'bg-light text-dark' : 'bg-secondary' }}">
+                                    {{ recipe.difficulty }}
+                                </span>
+                            </div>
+                            <small class="{{ isActive ? '' : 'text-muted' }}">
+                                ⏱️ {{ recipe.prepTimeMinutes }} min
+                            </small>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Colonne de droite : le détail de la recette sélectionnée. #}
+            <div class="col-md-8 col-lg-9">
+                {% if selectedRecipe %}
+                    <div class="card">
+                        <div class="card-body">
+                            <h2 class="card-title">{{ selectedRecipe.title }}</h2>
+                            <p>
+                                <span class="badge bg-primary">{{ selectedRecipe.difficulty }}</span>
+                                <span class="badge bg-info text-dark">⏱️ {{ selectedRecipe.prepTimeMinutes }} min</span>
+                            </p>
+
+                            <h3 class="h5 mt-4">Ingrédients</h3>
+                            <ul>
+                                {% for ingredient in selectedRecipe.ingredients %}
+                                    <li>{{ ingredient }}</li>
+                                {% endfor %}
+                            </ul>
+
+                            <h3 class="h5 mt-4">Étapes</h3>
+                            <ol>
+                                {% for step in selectedRecipe.steps %}
+                                    <li>{{ step }}</li>
+                                {% endfor %}
+                            </ol>
+
+                            {% if selectedRecipe.presentation %}
+                                <h3 class="h5 mt-4">Proposition de présentation</h3>
+                                <p>{{ selectedRecipe.presentation }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
