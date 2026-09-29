@@ -34,6 +34,12 @@ class RecipeController extends AbstractController
     private const SESSION_RECIPES = 'recettia_recipes';
     private const SESSION_INGREDIENTS = 'recettia_ingredients';
 
+    // Longueur maximale acceptée pour la saisie des ingrédients : cela évite
+    // qu'un utilisateur (volontairement ou non) n'envoie un texte énorme à
+    // l'API Claude, ce qui gonflerait inutilement la session et le coût de
+    // l'appel à l'IA.
+    private const MAX_INGREDIENTS_LENGTH = 500;
+
     public function __construct(
         private readonly RecipeGeneratorInterface $recipeGenerator,
     ) {
@@ -89,6 +95,19 @@ class RecipeController extends AbstractController
                 'selectedIndex' => 0,
                 'selectedRecipe' => null,
                 'error' => 'Merci de saisir au moins un ingrédient.',
+            ]);
+        }
+
+        if (mb_strlen($ingredients) > self::MAX_INGREDIENTS_LENGTH) {
+            return $this->render('recipe/index.html.twig', [
+                'ingredients' => $ingredients,
+                'recipes' => [],
+                'selectedIndex' => 0,
+                'selectedRecipe' => null,
+                'error' => sprintf(
+                    'Votre liste d\'ingrédients est trop longue (%d caractères maximum).',
+                    self::MAX_INGREDIENTS_LENGTH
+                ),
             ]);
         }
 

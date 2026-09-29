@@ -82,7 +82,43 @@ final class ClaudeRecipeGenerator implements RecipeGeneratorInterface
             );
         }
 
-        return $recipes;
+        // Le contrôleur et le template supposent que l'index 0 correspond
+        // toujours à la recette "facile", l'index 1 à la "moyen" et l'index 2
+        // à la "difficile" (par exemple pour la sélection par défaut après
+        // génération). On réordonne donc les recettes selon leur difficulté,
+        // au lieu de faire confiance à l'ordre renvoyé par l'IA.
+        return $this->orderByDifficulty($recipes);
+    }
+
+    /**
+     * Réordonne les 3 recettes selon l'ordre attendu "facile", "moyen",
+     * "difficile", en se basant sur le champ "difficulty" de chaque recette.
+     * Lève une exception si une difficulté attendue est absente ou dupliquée.
+     *
+     * @param Recipe[] $recipes
+     *
+     * @return Recipe[]
+     */
+    private function orderByDifficulty(array $recipes): array
+    {
+        $ordered = [];
+
+        foreach (self::EXPECTED_DIFFICULTIES as $difficulty) {
+            $matches = array_values(array_filter(
+                $recipes,
+                static fn (Recipe $recipe): bool => $recipe->difficulty === $difficulty
+            ));
+
+            if (1 !== count($matches)) {
+                throw new RecipeGenerationException(
+                    "L'IA n'a pas renvoyé une recette pour chaque niveau de difficulté attendu (facile, moyen, difficile), réessayez avec d'autres ingrédients."
+                );
+            }
+
+            $ordered[] = $matches[0];
+        }
+
+        return $ordered;
     }
 
     /**
