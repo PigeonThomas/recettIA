@@ -43,8 +43,11 @@ final class Recipe
             title: (string) ($data['title'] ?? 'Recette sans titre'),
             difficulty: (string) ($data['difficulty'] ?? 'facile'),
             prepTimeMinutes: (int) ($data['prep_time_minutes'] ?? 0),
-            ingredients: array_map('strval', $data['ingredients'] ?? []),
-            steps: array_map('strval', $data['steps'] ?? []),
+            // is_array() protège contre une IA qui renverrait un champ
+            // "ingredients"/"steps" qui ne soit pas un tableau (chaîne, null...) :
+            // array_map lèverait sinon une erreur fatale.
+            ingredients: array_map('strval', is_array($data['ingredients'] ?? null) ? $data['ingredients'] : []),
+            steps: array_map('strval', is_array($data['steps'] ?? null) ? $data['steps'] : []),
             presentation: isset($data['presentation']) ? (string) $data['presentation'] : null,
         );
     }

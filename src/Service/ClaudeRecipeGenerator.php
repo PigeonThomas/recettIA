@@ -56,8 +56,14 @@ final class ClaudeRecipeGenerator implements RecipeGeneratorInterface
             // getContent(true) lève une exception si le code HTTP n'est pas 2xx.
             $payload = $response->toArray(true);
         } catch (HttpExceptionInterface $e) {
+            // On journalise le détail technique côté serveur (utile pour
+            // déboguer), mais on ne l'expose jamais tel quel à l'utilisateur :
+            // il pourrait contenir des informations sensibles (URL interne,
+            // détails de la réponse de l'API...).
+            error_log(sprintf('[recettIA] Erreur lors de l\'appel à l\'API Claude : %s', $e->getMessage()));
+
             throw new RecipeGenerationException(
-                "Impossible de contacter l'API Claude : ".$e->getMessage(),
+                "Impossible de contacter l'API Claude pour le moment. Réessayez plus tard.",
                 previous: $e
             );
         }
@@ -138,10 +144,34 @@ final class ClaudeRecipeGenerator implements RecipeGeneratorInterface
      */
     private function extractJsonArray(string $text): array
     {
-        $start = strpos($text, '[');
-        $end = strrpos($text, ']');
+        $text = trim($text);
 
-        if (false === $start || false === $end || $end < $start) {
+        // 1) Cas le plus simple : la réponse est déjà un JSON pur et valide.
+        $data = json_decode($text, true);
+        if (is_array($data)) {
+            return $data;
+        }
+
+        // 2) L'IA a parfois entouré sa réponse de balises markdown ```json ... ```.
+        if (preg_match('/```(?:json)?\s*(.*?)\s*```/s', $text, $matches)) {
+            $data = json_decode(trim($matches[1]), true);
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+
+        // 3) En dernier recours, on recherche le premier tableau JSON "équilibré"
+        // en comptant les crochets ouvrants/fermants tout en ignorant ceux qui
+        // se trouvent à l'intérieur d'une chaîne de caractères. Cela évite
+        // qu'un simple `strrpos(']')` ne coupe le JSON au mauvais endroit si du
+        // texte libre contenant des crochets entoure la réponse.
+        $start = strpos($text, '[');
+        if (false === $start) {
+            throw new RecipeGenerationException("La réponse de l'IA n'est pas au format JSON attendu.");
+        }
+
+        $end = $this->findMatchingBracket($text, $start);
+        if (null === $end) {
             throw new RecipeGenerationException("La réponse de l'IA n'est pas au format JSON attendu.");
         }
 
@@ -153,5 +183,46 @@ final class ClaudeRecipeGenerator implements RecipeGeneratorInterface
         }
 
         return $data;
+    }
+
+    /**
+     * Retourne l'index du crochet fermant "]" qui correspond au crochet
+     * ouvrant "[" situé à l'index $start, en tenant compte des chaînes de
+     * caractères JSON (où un crochet ne compte pas) et des caractères
+     * échappés (\").
+     */
+    private function findMatchingBracket(string $text, int $start): ?int
+    {
+        $depth = 0;
+        $inString = false;
+        $escaped = false;
+
+        for ($i = $start, $length = strlen($text); $i < $length; ++$i) {
+            $char = $text[$i];
+
+            if ($inString) {
+                if ($escaped) {
+                    $escaped = false;
+                } elseif ('\\' === $char) {
+                    $escaped = true;
+                } elseif ('"' === $char) {
+                    $inString = false;
+                }
+                continue;
+            }
+
+            if ('"' === $char) {
+                $inString = true;
+            } elseif ('[' === $char) {
+                ++$depth;
+            } elseif (']' === $char) {
+                --$depth;
+                if (0 === $depth) {
+                    return $i;
+                }
+            }
+        }
+
+        return null;
     }
 }
