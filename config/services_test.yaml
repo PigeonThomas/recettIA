@@ -1,0 +1,8 @@
+services:
+    # Uniquement chargé en environnement "test" (voir MicroKernelTrait).
+    # On remplace ici le vrai service d'appel à Claude par un faux, afin que
+    # les tests fonctionnels (WebTestCase) ne fassent jamais de vrai appel
+    # réseau vers l'API Anthropic.
+    App\Service\RecipeGeneratorInterface: '@App\Tests\Fixtures\StubRecipeGenerator'
+
+    App\Tests\Fixtures\StubRecipeGenerator: ~
