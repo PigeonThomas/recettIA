@@ -1,0 +1,6 @@
+# Ce fichier n'est chargé qu'en environnement "test" (celui utilisé par
+# PHPUnit / KernelTestCase). "test: true" rend tous les services accessibles
+# depuis les tests via self::getContainer(), ce qui nous permet de remplacer
+# le service d'appel à l'IA par un faux service (voir tests/Controller).
+framework:
+    test: true

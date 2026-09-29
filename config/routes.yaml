@@ -1,0 +1,7 @@
+controllers:
+    # On importe automatiquement les routes définies grâce aux attributs
+    # #[Route(...)] présents sur les méthodes des contrôleurs.
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
