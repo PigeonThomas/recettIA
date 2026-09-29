@@ -1,0 +1,16 @@
+# Configuration du "coeur" de Symfony (FrameworkBundle).
+framework:
+    # La clé secrète sert à signer les cookies de session, les tokens CSRF, etc.
+    secret: '%env(APP_SECRET)%'
+
+    # Active la gestion de session PHP : elle est indispensable pour
+    # conserver les 3 recettes proposées par l'IA entre deux pages vues
+    # (par exemple quand l'utilisateur clique sur une autre vignette).
+    session:
+        handler_id: null
+        cookie_secure: auto
+        cookie_samesite: lax
+        storage_factory_id: session.storage.factory.native
+
+    php_errors:
+        log: true

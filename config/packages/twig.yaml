@@ -1,0 +1,4 @@
+# Configuration du moteur de templates Twig.
+twig:
+    # Dossier où Twig va chercher les fichiers .html.twig.
+    default_path: '%kernel.project_dir%/templates'
