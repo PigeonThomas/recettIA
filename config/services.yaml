@@ -1,0 +1,24 @@
+services:
+    # Réglages par défaut appliqués à tous les services déclarés ci-dessous.
+    _defaults:
+        autowire: true      # Symfony devine tout seul les dépendances à injecter.
+        autoconfigure: true # Symfony détecte tout seul les services spéciaux (contrôleurs, etc.).
+        bind:
+            # Ces paramètres scalaires ne peuvent pas être devinés par
+            # l'autowiring : on les relie explicitement aux arguments des
+            # constructeurs qui portent le même nom.
+            string $apiKey: '%env(ANTHROPIC_API_KEY)%'
+            string $model: '%env(ANTHROPIC_MODEL)%'
+
+    # On déclare automatiquement comme services toutes les classes du
+    # dossier src/, sauf celles qui n'ont pas de sens à être des services
+    # (Kernel, DTO/Entités, etc.).
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            - '../src/Recipe/Recipe.php'
+
+    # On indique à Symfony que, partout où l'on demande l'interface
+    # RecipeGeneratorInterface, il doit fournir notre implémentation Claude.
+    App\Service\RecipeGeneratorInterface: '@App\Service\ClaudeRecipeGenerator'

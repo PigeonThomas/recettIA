@@ -1,0 +1,27 @@
+services:
+    # Conteneur PHP-FPM qui exécute le code Symfony de l'application.
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        env_file:
+            - .env
+        volumes:
+            # En développement, on monte le code source dans le conteneur
+            # pour voir ses modifications sans reconstruire l'image.
+            - .:/var/www/html
+            - /var/www/html/vendor
+        expose:
+            - "9000"
+
+    # Serveur web qui reçoit les requêtes HTTP et sert les fichiers
+    # statiques, en déléguant l'exécution de PHP au conteneur "app".
+    nginx:
+        image: nginx:1.27-alpine
+        depends_on:
+            - app
+        ports:
+            - "8080:80"
+        volumes:
+            - ./public:/var/www/html/public:ro
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
