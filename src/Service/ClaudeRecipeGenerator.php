@@ -20,6 +20,11 @@ final class ClaudeRecipeGenerator implements RecipeGeneratorInterface
     private const API_URL = 'https://api.anthropic.com/v1/messages';
     private const ANTHROPIC_VERSION = '2023-06-01';
 
+    // Ordre attendu des difficultés, utilisé pour garantir que la recette
+    // d'index 0 est toujours la "facile", peu importe l'ordre dans lequel
+    // l'IA les a renvoyées.
+    private const EXPECTED_DIFFICULTIES = ['facile', 'moyen', 'difficile'];
+
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly string $apiKey,
